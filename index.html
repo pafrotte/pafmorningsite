@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Morning</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* ── PASSWORD GATE ────────────────────────────────── */
+  #gate {
+    position: fixed;
+    inset: 0;
+    background: #111;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    gap: 24px;
+    animation: fadeUp 0.4s ease both;
+  }
+
+  #gate.hidden { display: none; }
+
+  #gate-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #888;
+  }
+
+  #gate-input {
+    border: none;
+    border-bottom: 1.5px solid #fff;
+    padding: 10px 0;
+    font-family: 'DM Mono', monospace;
+    font-size: 22px;
+    letter-spacing: 0.25em;
+    text-align: center;
+    background: transparent;
+    outline: none;
+    color: #fff;
+  }
+
+  #gate-error {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: #fff;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  #gate-error.visible { opacity: 1; }
+
+  :root {
+    --bg: #111111;
+    --fg: #ffffff;
+    --muted: #777777;
+    --border: #2a2a2a;
+    --hover: #1a1a1a;
+    --accent: #ffffff;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    padding: 48px 24px 80px;
+    max-width: 680px;
+    margin: 0 auto;
+  }
+
+  /* ── TIME ─────────────────────────────────────────── */
+  #clock-section {
+    margin-bottom: 56px;
+    animation: fadeUp 0.5s ease both;
+  }
+
+  #time {
+    font-family: 'DM Mono', monospace;
+    font-size: clamp(52px, 14vw, 96px);
+    font-weight: 300;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    color: var(--fg);
+  }
+
+  #date-line {
+    margin-top: 8px;
+    font-size: 14px;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* ── SECTIONS ─────────────────────────────────────── */
+  .section {
+    border-top: 1px solid var(--border);
+    padding-top: 28px;
+    margin-bottom: 40px;
+  }
+
+  .section-label {
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 20px;
+  }
+
+  /* ── WEATHER ──────────────────────────────────────── */
+  #weather-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+  }
+
+  .w-main {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  #w-temp {
+    font-size: clamp(40px, 10vw, 64px);
+    font-family: 'DM Mono', monospace;
+    font-weight: 300;
+    letter-spacing: -0.03em;
+    line-height: 1;
+  }
+
+  #w-condition {
+    font-size: 16px;
+    color: var(--muted);
+    font-weight: 300;
+  }
+
+  .w-meta {
+    font-size: 13px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    margin-bottom: 6px;
+  }
+
+  .w-meta span {
+    color: var(--fg);
+  }
+
+  /* ── CALENDAR ─────────────────────────────────────── */
+  .cal-day-label {
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+    margin-top: 20px;
+  }
+
+  .cal-day-label:first-child { margin-top: 0; }
+
+  .event-item {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .event-item:last-child { border-bottom: none; }
+
+  .event-time {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+    width: 80px;
+  }
+
+  .event-name {
+    font-size: 14px;
+    font-weight: 400;
+  }
+
+  .no-events {
+    font-size: 13px;
+    color: var(--muted);
+    font-style: italic;
+    padding: 8px 0;
+  }
+
+  /* ── CHECKLIST ────────────────────────────────────── */
+  .check-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    animation: fadeUp 0.2s ease both;
+  }
+
+  .check-item:last-of-type { border-bottom: none; }
+
+  .check-item input[type="checkbox"] {
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border: 1.5px solid var(--fg);
+    border-radius: 2px;
+    cursor: pointer;
+    flex-shrink: 0;
+    position: relative;
+    transition: background 0.15s;
+  }
+
+  .check-item input[type="checkbox"]:checked {
+    background: var(--fg);
+  }
+
+  .check-item input[type="checkbox"]:checked::after {
+    content: '';
+    position: absolute;
+    left: 3px;
+    top: 1px;
+    width: 8px;
+    height: 5px;
+    border-left: 1.5px solid #111;
+    border-bottom: 1.5px solid #111;
+    transform: rotate(-45deg);
+  }
+
+  .check-label {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 400;
+    cursor: pointer;
+    transition: color 0.15s;
+  }
+
+  .check-item.done .check-label {
+    color: var(--muted);
+    text-decoration: line-through;
+  }
+
+  .delete-btn {
+    background: none;
+    border: none;
+    color: var(--border);
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    padding: 0 4px;
+    transition: color 0.15s;
+    flex-shrink: 0;
+  }
+
+  .delete-btn:hover { color: var(--fg); }
+
+  #add-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 18px;
+  }
+
+  #new-task {
+    flex: 1;
+    border: none;
+    border-bottom: 1.5px solid var(--border);
+    padding: 8px 0;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 300;
+    background: transparent;
+    outline: none;
+    color: var(--fg);
+    transition: border-color 0.2s;
+  }
+
+  #new-task::placeholder { color: var(--muted); }
+  #new-task:focus { border-color: var(--fg); }
+
+  #add-btn {
+    background: var(--fg);
+    color: var(--bg);
+    border: none;
+    padding: 8px 18px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: opacity 0.15s;
+  }
+
+  #add-btn:hover { opacity: 0.7; }
+
+  /* ── ANIMATIONS ───────────────────────────────────── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .section:nth-child(1) { animation: fadeUp 0.5s 0.05s ease both; }
+  .section:nth-child(2) { animation: fadeUp 0.5s 0.15s ease both; }
+  .section:nth-child(3) { animation: fadeUp 0.5s 0.25s ease both; }
+
+  /* ── LOADING / ERROR ──────────────────────────────── */
+  .loading { color: var(--muted); font-size: 13px; font-family: 'DM Mono', monospace; }
+
+  @media (max-width: 480px) {
+    body { padding: 32px 16px 60px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── PASSWORD GATE ─────────────────────────────────── -->
+<div id="gate">
+  <div id="gate-label">Good morning</div>
+  <input id="gate-input" type="password" placeholder="······" autocomplete="off" autofocus />
+  <div id="gate-error">Incorrect password</div>
+</div>
+
+<!-- ── TIME ──────────────────────────────────────────── -->
+<div id="clock-section">
+  <div id="time">00:00</div>
+  <div id="date-line">Loading...</div>
+</div>
+
+<!-- ── WEATHER ────────────────────────────────────────── -->
+<div class="section">
+  <div class="section-label">Weather · New York City</div>
+  <div id="weather-content"><span class="loading">Fetching weather…</span></div>
+</div>
+
+<!-- ── CHECKLIST ─────────────────────────────────────── -->
+<div class="section">
+  <div class="section-label">Checklist</div>
+  <div id="checklist"></div>
+  <div id="add-row">
+    <input id="new-task" type="text" placeholder="Add a task…" autocomplete="off" />
+    <button id="add-btn" onclick="addTask()">Add</button>
+  </div>
+</div>
+
+<!-- ── CALENDAR ───────────────────────────────────────── -->
+<div class="section">
+  <div class="section-label">Calendar</div>
+  <div id="cal-content"></div>
+</div>
+
+<script>
+// ── PASSWORD GATE ────────────────────────────────────────
+const PASS_HASH = '7a13f9d5e3b2c8a4f6d1e0b9c7a2d5f8e3b1c4a7f2d9e6b3c0a5f8d2e1b4c7'; // sha256-like placeholder
+const CORRECT   = btoa('Zidane'); // simple obfuscation — not cryptographic
+
+function checkGate() {
+  const stored = sessionStorage.getItem('mg_auth');
+  if (stored === CORRECT) showDashboard();
+}
+
+function attemptLogin() {
+  const val = document.getElementById('gate-input').value;
+  if (btoa(val) === CORRECT) {
+    sessionStorage.setItem('mg_auth', CORRECT);
+    showDashboard();
+  } else {
+    const err = document.getElementById('gate-error');
+    err.classList.add('visible');
+    document.getElementById('gate-input').value = '';
+    setTimeout(() => err.classList.remove('visible'), 2000);
+  }
+}
+
+function showDashboard() {
+  document.getElementById('gate').classList.add('hidden');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  checkGate();
+  document.getElementById('gate-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') attemptLogin();
+  });
+});
+
+// ── CLOCK ────────────────────────────────────────────────
+const DAYS   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+function updateClock() {
+  const now = new Date();
+  const hh  = String(now.getHours()).padStart(2,'0');
+  const mm  = String(now.getMinutes()).padStart(2,'0');
+  document.getElementById('time').textContent = `${hh}:${mm}`;
+  const day = DAYS[now.getDay()];
+  const mon = MONTHS[now.getMonth()];
+  const d   = now.getDate();
+  const y   = now.getFullYear();
+  document.getElementById('date-line').textContent = `${day}, ${mon} ${d}, ${y}`;
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+// ── WEATHER ──────────────────────────────────────────────
+async function fetchWeatherData() {
+  // Try local proxy first (when server is running), fall back to direct
+  const sources = ['/api/weather', 'https://wttr.in/New+York+City?format=j1'];
+  for (const url of sources) {
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(4000) });
+      if (!res.ok) continue;
+      const data = await res.json();
+      if (data && data.current_condition) return data;
+    } catch(e) { /* try next */ }
+  }
+  throw new Error('All weather sources failed');
+}
+
+async function loadWeather() {
+  try {
+    const data    = await fetchWeatherData();
+    const cur     = data.current_condition[0];
+    const today   = data.weather[0];
+    const temp    = cur.temp_C;
+    const feels   = cur.FeelsLikeC;
+    const desc    = cur.weatherDesc[0].value;
+    const hi      = today.maxtempC;
+    const lo      = today.mintempC;
+    const sunrise = today.astronomy[0].sunrise;
+    const sunset  = today.astronomy[0].sunset;
+
+    document.getElementById('weather-content').innerHTML = `
+      <div id="weather-grid">
+        <div class="w-main">
+          <div id="w-temp">${temp}°</div>
+          <div id="w-condition">${desc}</div>
+        </div>
+        <div>
+          <div class="w-meta">High&nbsp;&nbsp;<span>${hi}°C</span></div>
+          <div class="w-meta">Low&nbsp;&nbsp;&nbsp;<span>${lo}°C</span></div>
+        </div>
+        <div>
+          <div class="w-meta">Sunrise&nbsp;<span>${sunrise}</span></div>
+          <div class="w-meta">Sunset&nbsp;&nbsp;<span>${sunset}</span></div>
+        </div>
+        <div style="grid-column:1/-1;margin-top:8px">
+          <div class="w-meta">Feels like&nbsp;<span>${feels}°C</span></div>
+        </div>
+      </div>`;
+  } catch(e) {
+    document.getElementById('weather-content').innerHTML =
+      '<span class="loading">Could not load weather.</span>';
+  }
+}
+loadWeather();
+
+// ── CALENDAR ─────────────────────────────────────────────
+const calEvents = {
+  "2026-02-18": [
+    { time: "3:15 PM", name: "Dentist" }
+  ],
+  "2026-02-19": [],
+  "2026-02-20": [],
+  "2026-02-21": [
+    { time: "All day",  name: "2026 NYRR Al Gordon 5K" },
+    { time: "9:30 AM",  name: "UWS Runners" },
+    { time: "4:45 PM",  name: "Haircut at Mildred New York" }
+  ],
+  "2026-02-22": [
+    { time: "11:00 AM", name: "Gill and Ezra Brunch" },
+    { time: "3:00 PM",  name: "Ardis satisfy shirt" },
+    { time: "7:45 PM",  name: "Dinner with Gill and Ezra" }
+  ]
+};
+
+function renderCalendar() {
+  const now      = new Date();
+  const todayKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+
+  const days = [];
+  const cur  = new Date(now);
+  cur.setHours(0,0,0,0);
+  const daysUntilSunday = cur.getDay() === 0 ? 0 : (7 - cur.getDay());
+  const endOfWeek = new Date(cur);
+  endOfWeek.setDate(cur.getDate() + daysUntilSunday);
+
+  for (let d = new Date(cur); d <= endOfWeek; d.setDate(d.getDate() + 1)) {
+    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    days.push({ key, date: new Date(d) });
+  }
+
+  let html = '';
+  days.forEach(({ key, date }) => {
+    const isToday = key === todayKey;
+    const dayName = isToday ? 'Today' : DAYS[date.getDay()];
+    const dateStr = `${MONTHS[date.getMonth()]} ${date.getDate()}`;
+    const events  = calEvents[key] || [];
+
+    html += `<div class="cal-day-label">${dayName} · ${dateStr}</div>`;
+    if (events.length === 0) {
+      html += '<div class="no-events">No events</div>';
+    } else {
+      events.forEach(e => {
+        html += `<div class="event-item">
+          <div class="event-time">${e.time}</div>
+          <div class="event-name">${e.name}</div>
+        </div>`;
+      });
+    }
+  });
+
+  document.getElementById('cal-content').innerHTML = html;
+}
+renderCalendar();
+
+// ── CHECKLIST ────────────────────────────────────────────
+const STORAGE_KEY = 'morning_tasks';
+
+function loadTasks() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+  catch(e) { return []; }
+}
+
+function saveTasks(tasks) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+}
+
+function renderChecklist() {
+  const tasks = loadTasks();
+  const el    = document.getElementById('checklist');
+  if (tasks.length === 0) { el.innerHTML = ''; return; }
+  el.innerHTML = tasks.map((t, i) => `
+    <div class="check-item ${t.done ? 'done' : ''}" id="task-${i}">
+      <input type="checkbox" id="cb-${i}" ${t.done ? 'checked' : ''}
+        onchange="toggleTask(${i})" />
+      <label class="check-label" for="cb-${i}">${escHtml(t.text)}</label>
+      <button class="delete-btn" onclick="deleteTask(${i})" title="Remove">×</button>
+    </div>`).join('');
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function addTask() {
+  const input = document.getElementById('new-task');
+  const text  = input.value.trim();
+  if (!text) return;
+  const tasks = loadTasks();
+  tasks.push({ text, done: false });
+  saveTasks(tasks);
+  renderChecklist();
+  input.value = '';
+  input.focus();
+}
+
+function toggleTask(i) {
+  const tasks = loadTasks();
+  tasks[i].done = !tasks[i].done;
+  saveTasks(tasks);
+  renderChecklist();
+}
+
+function deleteTask(i) {
+  const tasks = loadTasks();
+  tasks.splice(i, 1);
+  saveTasks(tasks);
+  renderChecklist();
+}
+
+document.getElementById('new-task').addEventListener('keydown', e => {
+  if (e.key === 'Enter') addTask();
+});
+
+renderChecklist();
+</script>
+</body>
+</html>
